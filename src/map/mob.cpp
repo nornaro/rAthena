@@ -39,6 +39,7 @@
 #include "pc.hpp"
 #include "pet.hpp"
 #include "quest.hpp"
+#include "storage.hpp"
 
 using namespace rathena;
 
@@ -2178,20 +2179,28 @@ static void mob_item_drop(struct mob_data *md, struct item_drop_list *dlist, str
 {
 	TBL_PC* sd;
 	bool test_autoloot;
+	bool test_autostore;
 	//Logs items, dropped by mobs [Lupus]
 	log_pick_mob(md, loot?LOG_TYPE_LOOT:LOG_TYPE_PICKDROP_MONSTER, -ditem->item_data.amount, &ditem->item_data);
 
 	sd = map_charid2sd(dlist->first_charid);
 	if( sd == NULL ) sd = map_charid2sd(dlist->second_charid);
 	if( sd == NULL ) sd = map_charid2sd(dlist->third_charid);
-	test_autoloot = sd 
+	test_autoloot = sd && drop_rate >= battle_config.item_auto_get_min
 		&& (drop_rate <= sd->state.autoloot || pc_isautolooting(sd, ditem->item_data.nameid))
 		&& (battle_config.idle_no_autoloot == 0 || DIFF_TICK(last_tick, sd->idletime) < battle_config.idle_no_autoloot)
 		&& (battle_config.homunculus_autoloot?1:!flag);
+	test_autostore = sd && (drop_rate >= battle_config.item_auto_store);
 #ifdef AUTOLOOT_DISTANCE
 		test_autoloot = test_autoloot && sd->bl.m == md->bl.m
 		&& check_distance_blxy(&sd->bl, dlist->x, dlist->y, AUTOLOOT_DISTANCE);
 #endif
+	if (test_autostore) {	//Autostore.
+		struct party_data* p = party_search(sd->status.party_id);
+		storage_add_auto(sd, &sd->storage, &ditem->item_data, 1);
+		ers_free(item_drop_ers, ditem);
+		return;
+	}
 	if( test_autoloot ) {	//Autoloot.
 		struct party_data *p = party_search(sd->status.party_id);
 
@@ -2207,6 +2216,7 @@ static void mob_item_drop(struct mob_data *md, struct item_drop_list *dlist, str
 			return;
 		}
 	}
+	
 	ditem->next = dlist->item;
 	dlist->item = ditem;
 }

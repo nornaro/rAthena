@@ -51,6 +51,7 @@ struct guild_log_entry{
 const char *storage_getName(uint8 id);
 bool storage_exists(uint8 id);
 
+int storage_add_auto(struct map_session_data* sd, struct s_storage* stor, struct item* item_data, int amount);
 int storage_delitem(struct map_session_data* sd, struct s_storage *stor, int index, int amount);
 int storage_storageopen(struct map_session_data *sd);
 void storage_storageadd(struct map_session_data *sd, struct s_storage *stor, int index, int amount);

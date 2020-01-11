@@ -777,7 +777,7 @@ enum weapon_type {
 	W_1HAXE,	//6
 	W_2HAXE,	//7
 	W_MACE,	//8
-	W_2HMACE,	//9 (unused)
+	W_HAMMER,	//9 (unused)
 	W_STAFF,	//10
 	W_BOW,	//11
 	W_KNUCKLE,	//12

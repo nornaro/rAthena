@@ -53,16 +53,16 @@
 #define MAX_ZENY INT_MAX ///Max zeny
 #define MAX_BANK_ZENY SINT32_MAX ///Max zeny in Bank
 #define MAX_FAME 1000000000 ///Max fame points
-#define MAX_CART 100 ///Maximum item in cart
+#define MAX_CART 200 ///Maximum item in cart
 #define MAX_SKILL 1250 ///Maximum skill can be hold by Player, Homunculus, & Mercenary (skill list) AND skill_db limit
-#define DEFAULT_WALK_SPEED 150 ///Default walk speed
+#define DEFAULT_WALK_SPEED 140 ///Default walk speed
 #define MIN_WALK_SPEED 20 ///Min walk speed
 #define MAX_WALK_SPEED 1000 ///Max walk speed
-#define MAX_STORAGE 600 ///Max number of storage slots a player can have
-#define MAX_GUILD_STORAGE 600 ///Max number of storage slots a guild
-#define MAX_PARTY 12 ///Max party member
-#define MAX_GUILD 16+10*6	///Increased max guild members +6 per 1 extension levels [Lupus]
-#define MAX_GUILDPOSITION 20	///Increased max guild positions to accomodate for all members [Valaris] (removed) [PoW]
+#define MAX_STORAGE 800 ///Max number of storage slots a player can have
+#define MAX_GUILD_STORAGE 800 ///Max number of storage slots a guild
+#define MAX_PARTY 120 ///Max party member
+#define MAX_GUILD 20+10*10	///Increased max guild members +6 per 1 extension levels [Lupus]
+#define MAX_GUILDPOSITION 120	///Increased max guild positions to accomodate for all members [Valaris] (removed) [PoW]
 #define MAX_GUILDEXPULSION 32 ///Max Guild expulsion
 #define MAX_GUILDALLIANCE 16 ///Max Guild alliance
 #define MAX_GUILDSKILL	17 ///Max Guild skills
@@ -105,7 +105,7 @@
 #define PINCODE_LENGTH 4
 
 #define MAX_FRIENDS 40
-#define MAX_MEMOPOINTS 3
+#define MAX_MEMOPOINTS 6
 #define MAX_SKILLCOOLDOWN 20
 
 //Size of the fame list arrays.
@@ -171,6 +171,7 @@ enum item_types {
 	IT_DELAYCONSUME,//11
 	IT_SHADOWGEAR,  //12
 	IT_CASH = 18,
+	IT_CHARM = 30,
 	IT_MAX
 };
 
@@ -259,16 +260,16 @@ struct item {
 
 //Equip position constants
 enum equip_pos {
-	EQP_HEAD_LOW         = 0x000001,
-	EQP_HEAD_MID         = 0x000200, // 512
-	EQP_HEAD_TOP         = 0x000100, // 256
-	EQP_HAND_R           = 0x000002, // 2
-	EQP_HAND_L           = 0x000020, // 32
-	EQP_ARMOR            = 0x000010, // 16
-	EQP_SHOES            = 0x000040, // 64
-	EQP_GARMENT          = 0x000004, // 4
-	EQP_ACC_R            = 0x000008, // 8
-	EQP_ACC_L            = 0x000080, // 128
+	EQP_HEAD_LOW = 0x000001,
+	EQP_HEAD_MID = 0x000200, // 512
+	EQP_HEAD_TOP = 0x000100, // 256
+	EQP_HAND_R = 0x000002, // 2
+	EQP_HAND_L = 0x000020, // 32
+	EQP_ARMOR = 0x000010, // 16
+	EQP_SHOES = 0x000040, // 64
+	EQP_GARMENT = 0x000004, // 4
+	EQP_ACC_R = 0x000008, // 8
+	EQP_ACC_L = 0x000080, // 128
 	EQP_COSTUME_HEAD_TOP = 0x000400, // 1024
 	EQP_COSTUME_HEAD_MID = 0x000800, // 2048
 	EQP_COSTUME_HEAD_LOW = 0x001000, // 4096
@@ -283,8 +284,8 @@ enum equip_pos {
 	EQP_SHADOW_ACC_L     = 0x200000, // 2097152
 
 	// Combined
-	EQP_ACC_RL			= EQP_ACC_R|EQP_ACC_L,
-	EQP_SHADOW_ACC_RL	= EQP_SHADOW_ACC_R|EQP_SHADOW_ACC_L,
+	EQP_ACC_RL = EQP_ACC_R | EQP_ACC_L,
+	EQP_SHADOW_ACC_RL = EQP_SHADOW_ACC_R | EQP_SHADOW_ACC_L,
 };
 
 struct point {

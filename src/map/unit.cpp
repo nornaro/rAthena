@@ -2098,8 +2098,8 @@ int unit_skilluse_pos2( struct block_list *src, short skill_x, short skill_y, ui
 				return 0;
 		}
 	}
-
-	unit_stop_walking(src,1);
+	if (sd && (pc_checkskill(sd, SA_FREECAST) == 0) || !battle_config.freecast_start)
+		unit_stop_walking(src,1);
 
 	// SC_MAGICPOWER needs to switch states at start of cast
 	skill_toggle_magicpower(src, skill_id);
@@ -2631,7 +2631,8 @@ static int unit_attack_timer_sub(struct block_list* src, int tid, t_tick tick)
 			ud->dir = map_calc_dir(src, target->x, target->y);
 
 		if(ud->walktimer != INVALID_TIMER)
-			unit_stop_walking(src,1);
+			if (sd && (pc_checkskill(sd, SA_FREECAST) == 0) || !battle_config.freecast_start)
+				unit_stop_walking(src,1);
 
 		if(md) {
 			//First attack is always a normal attack

@@ -3828,7 +3828,7 @@
 	export_constant(W_1HAXE);
 	export_constant(W_2HAXE);
 	export_constant(W_MACE);
-	export_constant(W_2HMACE);
+	export_constant(W_HAMMER);
 	export_constant(W_STAFF);
 	export_constant(W_BOW);
 	export_constant(W_KNUCKLE);

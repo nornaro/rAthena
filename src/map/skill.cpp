@@ -2585,7 +2585,7 @@ int skill_break_equip(struct block_list *src, struct block_list *bl, unsigned sh
 				case W_1HAXE:
 				case W_2HAXE:
 				case W_MACE: // Axes and Maces can't be broken [DracoRPG]
-				case W_2HMACE:
+				case W_HAMMER:
 				case W_STAFF:
 				case W_2HSTAFF:
 				case W_BOOK: //Rods and Books can't be broken [Skotlex]
@@ -8571,12 +8571,7 @@ int skill_castend_nodamage_id (struct block_list *src, struct block_list *bl, ui
 		break;
 
 	case AS_SPLASHER:
-		if( status_has_mode(tstatus,MD_STATUS_IMMUNE)
-		// Renewal dropped the 3/4 hp requirement
-#ifndef RENEWAL
-			|| tstatus-> hp > tstatus->max_hp*3/4
-#endif
-				) {
+		if( status_has_mode(tstatus,MD_STATUS_IMMUNE) || tstatus-> hp > tstatus->max_hp*3/4) {
 			if (sd) clif_skill_fail(sd,skill_id,USESKILL_FAIL_LEVEL,0);
 			map_freeblock_unlock();
 			return 1;
@@ -11472,7 +11467,9 @@ TIMER_FUNC(skill_castend_id){
 			}
 		}
 		if (skill_get_state(ud->skill_id) != ST_MOVE_ENABLE)
-			unit_set_walkdelay(src, tick, battle_config.default_walk_delay+skill_get_walkdelay(ud->skill_id, ud->skill_lv), 1);
+			if( sd && (pc_checkskill(sd,SA_FREECAST) == 0) || !battle_config.freecast_stop)
+				unit_set_walkdelay(src, tick, battle_config.default_walk_delay+skill_get_walkdelay(ud->skill_id, ud->skill_lv), 1);
+
 
 		if(battle_config.skill_log && battle_config.skill_log&src->type)
 			ShowInfo("Type %d, ID %d skill castend id [id =%d, lv=%d, target ID %d]\n",
@@ -11639,7 +11636,8 @@ TIMER_FUNC(skill_castend_pos){
 				src->type, src->id, ud->skill_id, ud->skill_lv, ud->skillx, ud->skilly);
 
 		if (ud->walktimer != INVALID_TIMER)
-			unit_stop_walking(src,1);
+			if (sd && (pc_checkskill(sd, SA_FREECAST) == 0) || !battle_config.freecast_start)
+				unit_stop_walking(src,1);
 
 		if (!sd || sd->skillitem != ud->skill_id || skill_get_delay(ud->skill_id, ud->skill_lv))
 			ud->canact_tick = i64max(tick + skill_delayfix(src, ud->skill_id, ud->skill_lv), ud->canact_tick - SECURITY_CASTTIME);
@@ -11658,7 +11656,8 @@ TIMER_FUNC(skill_castend_pos){
 //				break;
 //			}
 //		}
-		unit_set_walkdelay(src, tick, battle_config.default_walk_delay+skill_get_walkdelay(ud->skill_id, ud->skill_lv), 1);
+		if (sd && (pc_checkskill(sd, SA_FREECAST) == 0) || !battle_config.freecast_stop)
+			unit_set_walkdelay(src, tick, battle_config.default_walk_delay + skill_get_walkdelay(ud->skill_id, ud->skill_lv), 1);
 		map_freeblock_lock();
 		skill_castend_pos2(src,ud->skillx,ud->skilly,ud->skill_id,ud->skill_lv,tick,0);
 
@@ -16756,6 +16755,9 @@ int skill_delayfix(struct block_list *bl, uint16 skill_id, uint16 skill_lv)
 
 	if (skill_id == SA_ABRACADABRA || skill_id == WM_RANDOMIZESPELL)
 		return 0; //Will use picked skill's delay.
+
+	if (time == 0 && battle_config.nodelay_skill == 1) return 0;
+	if (time == 0 && battle_config.nodelay_skill == 2) return battle_config.min_skill_delay_limit;
 
 	if (bl->type&battle_config.no_skill_delay)
 		return battle_config.min_skill_delay_limit;

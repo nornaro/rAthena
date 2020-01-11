@@ -4735,7 +4735,8 @@ static enum e_damage_type clif_calc_delay(enum e_damage_type type, int div, int6
 /*==========================================
  * Estimates walk delay based on the damage criteria. [Skotlex]
  *------------------------------------------*/
-static int clif_calc_walkdelay(struct block_list *bl,int delay, char type, int64 damage, int div_)
+//static int clif_calc_walkdelay(struct block_list *bl,int delay, char type, int64 damage, int div_)
+static int clif_calc_walkdelay(struct block_list *bl, int delay, int type, int damage, int div_, struct map_session_data *sd)
 {
 	if (type == DMG_ENDURE || type == DMG_MULTI_HIT_ENDURE || damage <= 0)
 		return 0;
@@ -4750,7 +4751,10 @@ static int clif_calc_walkdelay(struct block_list *bl,int delay, char type, int64
 	if (div_ > 1) //Multi-hit skills mean higher delays.
 		delay += battle_config.multihit_delay*(div_-1);
 
-	return (delay > 0) ? delay:1; //Return 1 to specify there should be no noticeable delay, but you should stop walking.
+	if (sd && (pc_checkskill(sd, SA_FREECAST) == 0) || !battle_config.freecast_start)
+		return 0; //Return 1 to specify there should be no noticeable delay, but you should stop walking.
+	else
+		return delay > 0 ? delay : 1; //Return 1 to specify there should be no noticeable delay, but you should stop walking.
 }
 
 /*========================================== [Playtester]
@@ -4796,6 +4800,7 @@ int clif_damage(struct block_list* src, struct block_list* dst, t_tick tick, int
 {
 	unsigned char buf[34];
 	struct status_change *sc;
+	struct map_session_data *sd;
 	int damage = (int)cap_value(sdamage,INT_MIN,INT_MAX);
 	int damage2 = (int)cap_value(sdamage2,INT_MIN,INT_MAX);
 #if PACKETVER < 20071113
@@ -4809,12 +4814,12 @@ int clif_damage(struct block_list* src, struct block_list* dst, t_tick tick, int
 	int offset = 3;
 #endif
 
+	sd = BL_CAST(BL_PC, src);
 	nullpo_ret(src);
 	nullpo_ret(dst);
 
 	if (type != DMG_MULTI_HIT_CRITICAL)
-		type = clif_calc_delay(type,div,damage+damage2,ddelay);
-	sc = status_get_sc(dst);
+		type = clif_calc_delay(type,div,damage+damage2,ddelay);	sc = status_get_sc(dst);
 	if(sc && sc->count) {
 		if(sc->data[SC_HALLUCINATION]) {
 			if(damage) damage = clif_hallucination_damage();
@@ -4879,7 +4884,7 @@ int clif_damage(struct block_list* src, struct block_list* dst, t_tick tick, int
 	// In case this assignment is bypassed by DMG_MULTI_HIT_CRITICAL
 	type = clif_calc_delay(type, div, damage + damage2, ddelay);
 	//Return adjusted can't walk delay for further processing.
-	return clif_calc_walkdelay(dst, ddelay, type, damage+damage2, div);
+	return clif_calc_walkdelay(dst, ddelay, type, damage + damage2, div, sd);
 }
 
 /*==========================================
@@ -5559,6 +5564,8 @@ int clif_skill_damage(struct block_list *src,struct block_list *dst,t_tick tick,
 	struct status_change *sc;
 	int damage = (int)cap_value(sdamage,INT_MIN,INT_MAX);
 
+	struct map_session_data* sd;
+	sd = BL_CAST(BL_PC, src);
 	nullpo_ret(src);
 	nullpo_ret(dst);
 
@@ -5642,7 +5649,7 @@ int clif_skill_damage(struct block_list *src,struct block_list *dst,t_tick tick,
 #endif
 
 	//Because the damage delay must be synced with the client, here is where the can-walk tick must be updated. [Skotlex]
-	return clif_calc_walkdelay(dst,ddelay,type,damage,div);
+	return clif_calc_walkdelay(dst, ddelay, type, damage, div, sd);
 }
 
 

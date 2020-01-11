@@ -137,6 +137,15 @@ bool is_infinite_defense(struct block_list *target, int flag);
 
 struct Battle_Config
 {
+	int freecast_start;
+	int freecast_stop;
+	int issen;
+	int bunshin;
+	int venomknife;
+	int splasher_envenom;
+	int splasher_react;
+	int splasher_hp;
+	int splasher_edp;
 	int warp_point_debug;
 	int enable_critical;
 	int mob_critical_rate;
@@ -162,6 +171,8 @@ struct Battle_Config
 	int random_monster_checklv;
 	int attr_recover;
 	int item_auto_get;
+	int item_auto_get_min;
+	int item_auto_store;
 	int flooritem_lifetime;
 	int item_first_get_time;
 	int item_second_get_time;
@@ -405,6 +416,7 @@ struct Battle_Config
 	int exp_bonus_attacker;
 	int exp_bonus_max_attacker;
 	int min_skill_delay_limit;
+	int nodelay_skill;
 	int default_walk_delay;
 	int no_skill_delay;
 	int attack_walk_delay;
@@ -415,6 +427,7 @@ struct Battle_Config
 	int delay_battle_damage;
 	int hide_woe_damage;
 	int display_version;
+	int endure;
 
 	int display_hallucination;	// [Skotlex]
 	int use_statpoint_table;	// [Skotlex]

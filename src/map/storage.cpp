@@ -311,6 +311,46 @@ static int storage_additem(struct map_session_data* sd, struct s_storage *stor, 
 	return 0;
 }
 
+int storage_add_auto(map_session_data* sd, s_storage* stor, item* item_data, int amount)
+{
+	struct item_data* data;
+	int i;
+
+	if (item_data->nameid <= 0 || amount <= 0)
+		return 1;
+
+	data = itemdb_search(item_data->nameid);
+
+	if (itemdb_isstackable2(data)) { // Stackable
+		for (i = 0; i < stor->max_amount; i++) {
+			if (compare_item(&stor->u.items_storage[i], item_data)) { // existing items found, stack them
+				if (amount > MAX_AMOUNT - stor->u.items_storage[i].amount || (data->stack.storage && amount > data->stack.amount - stor->u.items_storage[i].amount))
+					return 2;
+
+				stor->u.items_storage[i].amount += amount;
+				stor->dirty = true;
+				clif_storageitemadded(sd, &stor->u.items_storage[i], i, amount);
+
+				return 0;
+			}
+		}
+	}
+
+	// find free slot
+	ARR_FIND(0, stor->max_amount, i, stor->u.items_storage[i].nameid == 0);
+	if (i >= stor->max_amount)
+		return 2;
+
+	// add item to slot
+	memcpy(&stor->u.items_storage[i], item_data, sizeof(stor->u.items_storage[0]));
+	stor->amount++;
+	stor->u.items_storage[i].amount = amount;
+	stor->dirty = true;
+	//clif_storageitemadded(sd, &stor->u.items_storage[i], i, amount);
+	//clif_updatestorageamount(sd, stor->amount, stor->max_amount);
+	return 0;
+}
+
 /**
  * Make a player delete an item from his storage
  * @param sd : player

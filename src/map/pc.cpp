@@ -319,7 +319,7 @@ unsigned int equip_bitmask[EQI_MAX] = {
 	EQP_SHADOW_SHIELD,		// EQI_SHADOW_SHIELD
 	EQP_SHADOW_SHOES,		// EQI_SHADOW_SHOES
 	EQP_SHADOW_ACC_R,		// EQI_SHADOW_ACC_R
-	EQP_SHADOW_ACC_L		// EQI_SHADOW_ACC_L
+	EQP_SHADOW_ACC_L,		// EQI_SHADOW_ACC_L
 };
 
 //Links related info to the sd->hate_mob[]/sd->feel_map[] entries
@@ -1406,7 +1406,7 @@ bool pc_authok(struct map_session_data *sd, uint32 login_id2, time_t expiration_
 		sd->spirit_timer[i] = INVALID_TIMER;
 
 	if (battle_config.item_auto_get)
-		sd->state.autoloot = 10000;
+		sd->state.autoloot = battle_config.item_auto_get;
 
 	if (battle_config.disp_experience)
 		sd->state.showexp = 1;
@@ -5101,8 +5101,10 @@ bool pc_isUseitem(struct map_session_data *sd,int n)
 	if(mapdata->flag[MF_NOITEMCONSUMPTION]) //consumable but mapflag prevent it
 		return false;
 	//Prevent mass item usage. [Skotlex]
-	if( DIFF_TICK(sd->canuseitem_tick,gettick()) > 0 ||
-		(itemdb_group_item_exists(IG_CASH_FOOD, nameid) && DIFF_TICK(sd->canusecashfood_tick,gettick()) > 0)
+	if ((DIFF_TICK(sd->canuseitem_tick, gettick()) > 0) &&
+		(sd->inventory_data[n]->type == IT_HEALING) ||
+		(DIFF_TICK(sd->canusecashfood_tick, gettick()) > 0) &&
+		(itemdb_group_item_exists(IG_CASH_FOOD, nameid))
 	)
 		return false;
 
@@ -7940,7 +7942,7 @@ void pc_damage(struct map_session_data *sd,struct block_list *src,unsigned int h
 
 TIMER_FUNC(pc_close_npc_timer){
 	TBL_PC *sd = map_id2sd(id);
-	if(sd) pc_close_npc(sd,data);
+	if(sd) pc_close_npc(sd,(int)data);
 	return 0;
 }
 /**
@@ -11139,7 +11141,7 @@ TIMER_FUNC(map_day_timer){
 	night_flag = 0; // 0=day, 1=night [Yor]
 	map_foreachpc(pc_daynight_timer_sub);
 	strcpy(tmp_soutput, (data == 0) ? msg_txt(NULL,502) : msg_txt(NULL,60)); // The day has arrived!
-	intif_broadcast(tmp_soutput, strlen(tmp_soutput) + 1, BC_DEFAULT);
+	intif_broadcast(tmp_soutput, strlen(tmp_soutput) + 1, (int)BC_DEFAULT);
 	return 0;
 }
 
@@ -11159,7 +11161,7 @@ TIMER_FUNC(map_night_timer){
 	night_flag = 1; // 0=day, 1=night [Yor]
 	map_foreachpc(pc_daynight_timer_sub);
 	strcpy(tmp_soutput, (data == 0) ? msg_txt(NULL,503) : msg_txt(NULL,59)); // The night has fallen...
-	intif_broadcast(tmp_soutput, strlen(tmp_soutput) + 1, BC_DEFAULT);
+	intif_broadcast(tmp_soutput, strlen(tmp_soutput) + 1, (int)BC_DEFAULT);
 	return 0;
 }
 

@@ -1276,7 +1276,7 @@ int64 battle_calc_damage(struct block_list *src,struct block_list *bl,struct Dam
 			if( tsd && sd && sc->data[SC_CRYSTALIZE] && flag&BF_WEAPON ) {
 				switch(tsd->status.weapon) {
 					case W_MACE:
-					case W_2HMACE:
+					case W_HAMMER:
 					case W_1HAXE:
 					case W_2HAXE:
 						damage += damage / 2;
@@ -1837,7 +1837,7 @@ int64 battle_addmastery(struct map_session_data *sd,struct block_list *target,in
 				damage += (skill * 5);
 			break;
 		case W_MACE:
-		case W_2HMACE:
+		case W_HAMMER:
 			if((skill = pc_checkskill(sd,PR_MACEMASTERY)) > 0)
 				damage += (skill * 3);
 			if((skill = pc_checkskill(sd,NC_TRAININGAXE)) > 0)
@@ -2802,6 +2802,10 @@ static int battle_get_weapon_element(struct Damage* wd, struct block_list *src, 
 			if (sd && sd->flicker) //Force RL_H_MINE deals fire damage if activated by RL_FLICKER
 				element = ELE_FIRE;
 			break;
+		case NJ_SYURIKEN:
+			if (sd && sd->flicker)
+				element = battle_get_weapon_element(wd, src, target, skill_id, skill_lv, EQI_HAND_L, false);
+			break;
 	}
 
 	if (sc && sc->data[SC_GOLDENE_FERSE] && ((!skill_id && (rnd() % 100 < sc->data[SC_GOLDENE_FERSE]->val4)) || skill_id == MH_STAHL_HORN))
@@ -2859,6 +2863,9 @@ static void battle_calc_element_damage(struct Damage* wd, struct block_list *src
 				//case NC_MAGMA_ERUPTION:
 					//Forced to neutral element
 					wd->damage = battle_attr_fix(src, target, wd->damage, ELE_NEUTRAL, tstatus->def_ele, tstatus->ele_lv);
+					break;
+				case NJ_SYURIKEN:
+					wd->damage = battle_attr_fix(src, target, wd->damage, battle_get_weapon_element(wd, src, target, skill_id, skill_lv, EQI_HAND_L, false), tstatus->def_ele, tstatus->ele_lv);
 					break;
 				case GN_CARTCANNON:
 				case KO_HAPPOKUNAI:
@@ -3061,6 +3068,7 @@ static void battle_calc_damage_parts(struct Damage* wd, struct block_list *src,s
 static void battle_calc_skill_base_damage(struct Damage* wd, struct block_list *src,struct block_list *target,uint16 skill_id,uint16 skill_lv)
 {
 	struct status_change *sc = status_get_sc(src);
+	struct status_change *tsc = status_get_sc(target);
 	struct status_data *sstatus = status_get_status_data(src);
 	struct status_data *tstatus = status_get_status_data(target);
 	struct map_session_data *sd = BL_CAST(BL_PC, src);
@@ -3507,17 +3515,37 @@ static int battle_calc_attack_skill_ratio(struct Damage* wd, struct block_list *
 		case MS_BOWLINGBASH:
 			skillratio += 40 * skill_lv;
 			break;
+		case AS_VENOMKNIFE:
+			if ((battle_config.venomknife & 1) == 1)
+				ATK_ADD(wd->damage, wd->damage2, sstatus->str);
+			if ((battle_config.venomknife & 2) == 2)
+				ATK_ADD(wd->damage, wd->damage2, sstatus->dex);
+			if ((battle_config.venomknife & 4) == 4)
+				ATK_ADD(wd->damage, wd->damage2, sstatus->batk);
+			if ((battle_config.venomknife & 8) == 8)
+				ATK_ADD(wd->damage, wd->damage2, pc_checkskill(sd, TF_POISON) * 15);
+			if ((battle_config.venomknife & 16) == 16)
+				skillratio +=  pc_checkskill(sd, TF_POISON) * 15;
+			if ((battle_config.venomknife & 32) == 32 && pc_checkskill(sd, AS_POISONREACT) != 0)
+				ATK_ADD(wd->damage, wd->damage2, pc_checkskill(sd, AS_POISONREACT) * 30);
+			if ((battle_config.venomknife & 64) == 64 && pc_checkskill(sd, AS_POISONREACT) != 0)
+				skillratio += pc_checkskill(sd, AS_POISONREACT) * 30;
+			if ((battle_config.venomknife & 128) == 128 && sc && sc->data[SC_POISONREACT])
+				ATK_ADD(wd->damage, wd->damage2, sc->data[SC_POISONREACT]->val2 * 50);
+			if ((battle_config.venomknife & 512) == 512 && sc && sc->data[SC_POISONREACT])
+				skillratio = (100 + sc->data[SC_POISONREACT]->val2 * 50) / 100;
+			break;
 		case AS_GRIMTOOTH:
 			skillratio += 20 * skill_lv;
-			break;
-		case AS_POISONREACT:
-			skillratio += 30 * skill_lv;
 			break;
 		case AS_SONICBLOW:
 			skillratio += 300 + 40 * skill_lv;
 			break;
 		case TF_SPRINKLESAND:
 			skillratio += 30;
+			break;
+		case TF_POISON:
+			wd->damage += 15 * skill_lv;
 			break;
 		case MC_CARTREVOLUTION:
 			skillratio += 50;
@@ -3663,9 +3691,14 @@ static int battle_calc_attack_skill_ratio(struct Damage* wd, struct block_list *
 			skillratio += 100 + 100 * skill_lv;
 			break;
 		case AS_SPLASHER:
+			if (battle_config.splasher_hp &&
+				((tstatus->hp / tstatus->max_hp) <= (battle_config.splasher_hp / 100)) &&
+				(tsc && tsc->data[SC_POISON])) {
+				ATK_ADD(wd->masteryAtk, wd->masteryAtk2, tstatus->hp);
+			}
 			skillratio += 400 + 50 * skill_lv;
-			if(sd)
-				skillratio += 20 * pc_checkskill(sd,AS_POISONREACT);
+			if (sc && sc->data[SC_POISONREACT])
+				skillratio += sc->data[SC_POISONREACT]->val2 * battle_config.splasher_react;
 			break;
 #ifndef RENEWAL
 		// Pre-Renewal: skill ratio for weapon part of damage [helvetica]
@@ -4513,16 +4546,14 @@ static void battle_attack_sc_bonus(struct Damage* wd, struct block_list *src, st
 			ATK_ADDRATE(wd->damage, wd->damage2, sc->data[SC_GT_CHANGE]->val1);
 		if (sc->data[SC_EDP]) {
 			switch(skill_id) {
-				case AS_SPLASHER:
 				case ASC_METEORASSAULT:
 				// Pre-Renewal only: Soul Breaker ignores EDP
-				// Renewal only: Grimtooth and Venom Knife ignore EDP
 				// Both: Venom Splasher and Meteor Assault ignore EDP [helvetica]
 #ifndef RENEWAL
 				case ASC_BREAKER:
 #else
 				case AS_GRIMTOOTH:
-				case AS_VENOMKNIFE:
+
 #endif
 					break; // skills above have no effect with EDP
 
@@ -4533,26 +4564,43 @@ static void battle_attack_sc_bonus(struct Damage* wd, struct block_list *src, st
 				// * Soul Breaker
 				// * Counter Slash
 				// * Cross Impact
+				// Renewal EDP formula [helvetica]
+				// weapon atk * (1 + (edp level * .8))
+				// equip atk * (1 + (edp level * .6))
 				case AS_SONICBLOW:
 				case ASC_BREAKER:
 				case GC_COUNTERSLASH:
 				case GC_CROSSIMPACT:
-					ATK_RATE(wd->weaponAtk, wd->weaponAtk2, 50);
-					ATK_RATE(wd->equipAtk, wd->equipAtk2, 50);
-				default: // fall through to apply EDP bonuses
-					// Renewal EDP formula [helvetica]
-					// weapon atk * (1 + (edp level * .8))
-					// equip atk * (1 + (edp level * .6))
-					ATK_RATE(wd->weaponAtk, wd->weaponAtk2, 100 + (sc->data[SC_EDP]->val1 * 80));
-					ATK_RATE(wd->equipAtk, wd->equipAtk2, 100 + (sc->data[SC_EDP]->val1 * 60));
+				case AS_POISONREACT:
+				case AS_VENOMDUST:
+				case AS_VENOMKNIFE:
+				case AS_SPLASHER:
+					ATK_RATE(wd->weaponAtk, wd->weaponAtk2, (875 + (sc->data[SC_EDP]->val1 * 625))/10);
+					ATK_RATE(wd->equipAtk,  wd->equipAtk2,  (625 + (sc->data[SC_EDP]->val1 * 675))/10);
 					break;
+				default:
+					ATK_ADDRATE(wd->damage, wd->damage2, sc->data[SC_EDP]->val3);
 #else
 				default:
 					ATK_ADDRATE(wd->damage, wd->damage2, sc->data[SC_EDP]->val3);
-
 #endif
 			}
 		}
+
+		if (sc->data[SC_ENCPOISON]) {
+			switch (skill_id) {
+				case AS_SPLASHER:
+				case AS_VENOMKNIFE:
+				case AS_POISONREACT:
+				case AS_VENOMDUST:
+				case TF_POISON:
+					ATK_ADDRATE(wd->weaponAtk, wd->weaponAtk2, sc->data[SC_ENCPOISON]->val2/10);
+					break;
+				default:
+					ATK_ADDRATE(wd->damage, wd->damage2, sc->data[SC_ENCPOISON]->val3/10);
+			}
+		}
+
 		if (sc->data[SC_GLOOMYDAY_SK] && (inf3&INF3_SC_GLOOMYDAY_SK)) {
 			ATK_ADDRATE(wd->damage, wd->damage2, sc->data[SC_GLOOMYDAY_SK]->val2);
 			RE_ALLATK_ADDRATE(wd, sc->data[SC_GLOOMYDAY_SK]->val2);
@@ -5595,6 +5643,9 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src, struct bl
 			// Forced to neutral element
 			wd.damage = battle_attr_fix(src, target, wd.damage, ELE_NEUTRAL, tstatus->def_ele, tstatus->ele_lv);
 			break;
+		case NJ_SYURIKEN:
+			wd.damage = battle_attr_fix(src, target, wd.damage, battle_get_weapon_element(&wd, src, target, skill_id, skill_lv, EQI_HAND_L, false), tstatus->def_ele, tstatus->ele_lv);
+			break;
 		case CR_SHIELDBOOMERANG:
 		case LK_SPIRALPIERCE:
 		case ML_SPIRALPIERCE:
@@ -6442,6 +6493,9 @@ struct Damage battle_calc_misc_attack(struct block_list *src,struct block_list *
 	struct status_data *tstatus = status_get_status_data(target);
 	struct status_change *ssc = status_get_sc(src);
 
+	struct Damage wd = initialize_weapon_data(src, target, skill_id, skill_lv, mflag);
+
+
 	memset(&md,0,sizeof(md));
 
 	if (src == NULL || target == NULL) {
@@ -6614,6 +6668,9 @@ struct Damage battle_calc_misc_attack(struct block_list *src,struct block_list *
 			if (tsd) md.damage>>=1;
 #endif
 			break;
+		case NJ_SYURIKEN:
+			md.damage = battle_attr_fix(src, target, md.damage, battle_get_weapon_element(&wd, src, target, skill_id, skill_lv, EQI_HAND_L, false),  tstatus->def_ele, tstatus->ele_lv);
+			break;
 		case NJ_ZENYNAGE:
 		case KO_MUCHANAGE:
 				md.damage = skill_get_zeny(skill_id, skill_lv);
@@ -6628,7 +6685,7 @@ struct Damage battle_calc_misc_attack(struct block_list *src,struct block_list *
 					md.damage = md.damage / 2;
 			break;
 #ifdef RENEWAL
-		case NJ_ISSEN:
+		 case NJ_ISSEN:
 			// Official Renewal formula [helvetica]
 			// base damage = currenthp + ((atk * currenthp * skill level) / maxhp)
 			// final damage = base damage + ((mirror image count + 1) / 5 * base damage) - (edef + sdef)
@@ -6638,11 +6695,11 @@ struct Damage battle_calc_misc_attack(struct block_list *src,struct block_list *
 				struct Damage atk = battle_calc_weapon_attack(src, target, skill_id, skill_lv, 0);
 				struct status_change *sc = status_get_sc(src);
 
-				md.damage = (int64)sstatus->hp + (atk.damage * (int64)sstatus->hp * skill_lv) / (int64)sstatus->max_hp;
-
+				//md.damage = 40 * atk.damage + (int64)sstatus->hp + (atk.damage * (int64)sstatus->hp / (int64)sstatus->max_hp * skill_lv / 100);
+				md.damage = ((int64)sstatus->hp * skill_lv / 10 + 40* atk.damage) * (int64)sstatus->hp / (int64)sstatus->max_hp;
+				
 				if (sc && sc->data[SC_BUNSINJYUTSU] && (i = sc->data[SC_BUNSINJYUTSU]->val2) > 0) { // mirror image bonus only occurs if active
-					md.div_ = -(i + 2); // mirror image count + 2
-					md.damage += (md.damage * (((i + 1) * 10) / 5)) / 10;
+					md.div_ = (i + 2); // mirror image count + 2
 				}
 				// modified def reduction, final damage = base damage - (edef + sdef)
 				totaldef = tstatus->def2 + (short)status_get_def(target);
@@ -7177,17 +7234,37 @@ enum damage_lv battle_weapon_attack(struct block_list* src, struct block_list* t
 
 	if (sd)
 	{
+		short index = sd->equip_index[EQI_AMMO];
+
+		if (sd->inventory_data[index] &&
+			sd->equip_index[EQI_HAND_R] &&
+			sd->inventory_data[sd->equip_index[EQI_HAND_R]]) {
+			if((sd->inventory_data[sd->equip_index[EQI_HAND_R]]->nameid == 7072 ||
+				sd->inventory_data[sd->equip_index[EQI_HAND_R]]->nameid == 7156) &&
+				!check_distance_bl(src, target, 1) &&
+				sd->inventory_data[index]->look == A_SHURIKEN &&
+				sd && (skillv = pc_checkskill(sd, NJ_SYURIKEN)) > 0)
+			{
+				sd->ud.canact_tick = i64max(tick + skill_delayfix(src, NJ_SYURIKEN, skillv), sd->ud.canact_tick);
+				if (skill_attack(BF_WEAPON, src, src, target, NJ_SYURIKEN, skillv, tick, 0))
+				{
+					pc_delitem(sd, sd->equip_index[EQI_AMMO], 1, 0, 1, LOG_TYPE_CONSUME);
+					return ATK_DEF;
+				}
+			}
+		}
+
 		sd->state.arrow_atk = (sd->status.weapon == W_BOW || (sd->status.weapon >= W_REVOLVER && sd->status.weapon <= W_GRENADE));
 		if (sd->state.arrow_atk)
 		{
-			short index = sd->equip_index[EQI_AMMO];
 			if (index < 0) {
-				if (sd->weapontype1 > W_KATAR && sd->weapontype1 < W_HUUMA)
-					clif_skill_fail(sd,0,USESKILL_FAIL_NEED_MORE_BULLET,0);
+				if (sd->weapontype1 > W_KATAR&& sd->weapontype1 < W_HUUMA)
+					clif_skill_fail(sd, 0, USESKILL_FAIL_NEED_MORE_BULLET, 0);
 				else
-					clif_arrow_fail(sd,0);
+					clif_arrow_fail(sd, 0);
 				return ATK_NONE;
 			}
+
 			//Ammo check by Ishizu-chan
 			if (sd->inventory_data[index]) {
 				switch (sd->status.weapon) {
@@ -7558,7 +7635,7 @@ enum damage_lv battle_weapon_attack(struct block_list* src, struct block_list* t
 				sce->val2 = 0;
 				skill_attack(BF_WEAPON,target,target,src,AS_POISONREACT,sce->val1,tick,0);
 			} else {
-				skill_attack(BF_WEAPON,target,target,src,TF_POISON, 5, tick, 0);
+				skill_attack(BF_WEAPON,target,target,src,AS_POISONREACT, 5, tick, 0);
 				--sce->val2;
 			}
 			if (sce->val2 <= 0)
@@ -8024,6 +8101,15 @@ static const struct _battle_data {
 	int min;
 	int max;
 } battle_data[] = {
+	{ "freecast_start",						&battle_config.freecast_start,					1,      0,      1,				},
+	{ "freecast_stop",						&battle_config.freecast_stop,					1,      0,      1,				},
+	{ "issen",								&battle_config.issen,							4,      0,      6,				},
+	{ "bunshin",							&battle_config.bunshin,							1,      0,      1,				},
+	{ "venomknife",							&battle_config.venomknife,						395,    0,      INT_MAX,		},
+	{ "splasher_envenom",					&battle_config.splasher_envenom,				1,		0,		1,				},
+	{ "splasher_react",						&battle_config.splasher_react,					100,    0,		SHRT_MAX,		},
+	{ "splasher_hp",						&battle_config.splasher_hp,						60,		0,		100,			},
+	{ "splasher_edp",						&battle_config.splasher_edp,					0,      0,		1,				},
 	{ "warp_point_debug",                   &battle_config.warp_point_debug,                0,      0,      1,              },
 	{ "enable_critical",                    &battle_config.enable_critical,                 BL_PC,  BL_NUL, BL_ALL,         },
 	{ "mob_critical_rate",                  &battle_config.mob_critical_rate,               100,    0,      INT_MAX,        },
@@ -8055,7 +8141,9 @@ static const struct _battle_data {
 	{ "random_monster_checklv",             &battle_config.random_monster_checklv,          0,      0,      1,              },
 	{ "attribute_recover",                  &battle_config.attr_recover,                    1,      0,      1,              },
 	{ "flooritem_lifetime",                 &battle_config.flooritem_lifetime,              60000,  1000,   INT_MAX,        },
-	{ "item_auto_get",                      &battle_config.item_auto_get,                   0,      0,      1,              },
+	{ "item_auto_get",                      &battle_config.item_auto_get,                   0,      0,      10000,          },
+	{ "item_auto_get_min",                  &battle_config.item_auto_get,                   0,      0,      10000,          },
+	{ "item_auto_store",                    &battle_config.item_auto_get,                   0,      0,      10000,          },
 	{ "item_first_get_time",                &battle_config.item_first_get_time,             3000,   0,      INT_MAX,        },
 	{ "item_second_get_time",               &battle_config.item_second_get_time,            1000,   0,      INT_MAX,        },
 	{ "item_third_get_time",                &battle_config.item_third_get_time,             1000,   0,      INT_MAX,        },
@@ -8319,6 +8407,7 @@ static const struct _battle_data {
 	{ "exp_bonus_attacker",                 &battle_config.exp_bonus_attacker,              25,     0,      INT_MAX,        },
 	{ "exp_bonus_max_attacker",             &battle_config.exp_bonus_max_attacker,          12,     2,      INT_MAX,        },
 	{ "min_skill_delay_limit",              &battle_config.min_skill_delay_limit,           100,    10,     INT_MAX,        },
+	{ "nodelay_skill",                      &battle_config.nodelay_skill,                   1,      0,      2,              },
 	{ "default_walk_delay",                 &battle_config.default_walk_delay,              300,    0,      INT_MAX,        },
 	{ "no_skill_delay",                     &battle_config.no_skill_delay,                  BL_MOB, BL_NUL, BL_ALL,         },
 	{ "attack_walk_delay",                  &battle_config.attack_walk_delay,               BL_ALL, BL_NUL, BL_ALL,         },
@@ -8556,6 +8645,7 @@ static const struct _battle_data {
 	{ "min_shop_sell",                      &battle_config.min_shop_sell,                   0,      0,      INT_MAX,        },
 	{ "feature.equipswitch",                &battle_config.feature_equipswitch,             1,      0,      1,              },
 	{ "pet_walk_speed",                     &battle_config.pet_walk_speed,                  1,      1,      3,              },
+	{ "endure",	                            &battle_config.endure,                          0,      0,		INT_MAX,		},
 	{ "blacksmith_fame_refine_threshold",   &battle_config.blacksmith_fame_refine_threshold,10,     1,      MAX_REFINE,     },
 	{ "mob_nopc_idleskill_rate",            &battle_config.mob_nopc_idleskill_rate,         100,    0,    100,              },
 	{ "mob_nopc_move_rate",                 &battle_config.mob_nopc_move_rate,              100,    0,    100,              },

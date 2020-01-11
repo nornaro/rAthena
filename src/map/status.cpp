@@ -1726,8 +1726,15 @@ int status_damage(struct block_list *src,struct block_list *target,int64 dhp, in
 				* Endure count is only reduced by non-players on non-gvg maps.
 				* val4 signals infinite endure.
 				**/
-				if (src && src->type != BL_PC && !map_flag_gvg2(target->m) && !map_getmapflag(target->m, MF_BATTLEGROUND) && --(sce->val2) <= 0)
-					status_change_end(target, SC_ENDURE, INVALID_TIMER);
+					if (src &&
+						(src->type != BL_PC || (battle_config.endure & 2) != 2) &&
+						(src->type == BL_PC || (battle_config.endure & 4) != 4) &&
+						(!map_flag_gvg(target->m) || (battle_config.endure & 8) != 8) &&
+						(map_flag_gvg(target->m) || (battle_config.endure & 16) != 16) &&
+						(!map_getmapflag(target->m, MF_BATTLEGROUND) || (battle_config.endure & 32) != 32) &&
+						(map_getmapflag(target->m, MF_BATTLEGROUND) || (battle_config.endure & 64) != 64) &&
+						--(sce->val2) < 0)
+							status_change_end(target, SC_ENDURE, INVALID_TIMER);
 			}
 			if ((sce=sc->data[SC_GRAVITATION]) && sce->val3 == BCT_SELF) {
 				struct skill_unit_group* sg = skill_id2group(sce->val4);
@@ -4057,7 +4064,7 @@ int status_calc_pc_sub(struct map_session_data* sd, enum e_status_calc_opt opt)
 	}
 	if((sd->status.weapon == W_1HAXE || sd->status.weapon == W_2HAXE) && (skill = pc_checkskill(sd,NC_TRAININGAXE)) > 0)
 		base_status->hit += skill * 3;
-	if((sd->status.weapon == W_MACE || sd->status.weapon == W_2HMACE) && (skill = pc_checkskill(sd,NC_TRAININGAXE)) > 0)
+	if((sd->status.weapon == W_MACE || sd->status.weapon == W_HAMMER) && (skill = pc_checkskill(sd,NC_TRAININGAXE)) > 0)
 		base_status->hit += skill * 2;
 	if (pc_checkskill(sd, SU_POWEROFLIFE) > 0)
 		base_status->hit += 20;
@@ -9579,7 +9586,7 @@ int status_change_start(struct block_list* src, struct block_list* bl,enum sc_ty
 			break;
 		case SC_ENDURE:
 			val2 = 7; // Hit-count [Celest]
-			if( !(flag&SCSTART_NOAVOID) && (bl->type&(BL_PC|BL_MER)) && !map_flag_gvg2(bl->m) && !map_getmapflag(bl->m, MF_BATTLEGROUND) && !val4 ) {
+			if (!(flag & 1) && (bl->type & (BL_PC | BL_MER) || (battle_config.endure & 2) != 2) && (!map_flag_gvg(bl->m) || (battle_config.endure & 8) != 8) && (!map_getmapflag(bl->m, MF_BATTLEGROUND) || (battle_config.endure & 32) != 32) && !val4){
 				struct map_session_data *tsd;
 				if( sd ) {
 					int i;
@@ -12122,7 +12129,7 @@ int status_change_end_(struct block_list* bl, enum sc_type type, int tid, const 
 		return 0;
 
 	if (tid == INVALID_TIMER) {
-		if (type == SC_ENDURE && sce->val4)
+		if (type == SC_ENDURE && sce->val4 && (battle_config.endure & 1) == 1)
 			// Do not end infinite endure.
 			return 0;
 		if (type == SC_SPIDERWEB) {
