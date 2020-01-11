@@ -1209,3 +1209,16 @@
 32222:15095,{ .@r = getequiprefinerycnt(EQI_ARMOR); bonus5 bAutoSpell,"PR_KYRIE",10,-(50+.@r),BF_SHORT,0; bonus2 bSkillAtk,"AB_JUDEX",5*.@r; bonus2 bSkillAtk,"AB_ADORAMUS",5*.@r; bonus2 bSkillAtk,"SR_DRAGONCOMBO",5*.@r; bonus2 bSkillAtk,"SR_SKYNETBLOW",5*.@r; bonus2 bSkillAtk,"SR_EARTHSHAKER",5*.@r; }
 32222:15096,{ .@r = getequiprefinerycnt(EQI_ARMOR); bonus bAllStats,2*.@r; bonus3 bAddEff,Eff_Stun,.@r*50,ATF_SHORT; bonus3 bAddEff,Eff_Curse,.@r*50,ATF_SHORT; bonus3 bAddEff,Eff_Poison,.@r*50,ATF_SHORT; bonus3 bAddEff,Eff_Silence,.@r*50,ATF_SHORT; /* Unknow rates */ }
 32238:32239,{ bonus bVariableCastrate,-10; bonus bMatkRate,10;  }
+
+7072:13250,{ bonus bAtkRange,8; bonus bAspd,15;}
+7072:13251,{ bonus bAtkRange,8; bonus bAspd,15;}
+7072:13252,{ bonus bAtkRange,8; bonus bAspd,15;}
+7072:13253,{ bonus bAtkRange,8; bonus bAspd,15;}
+7072:13254,{ bonus bAtkRange,8; bonus bAspd,15;}
+7072:13295,{ bonus bAtkRange,8; bonus bAspd,15;}
+7156:13250,{ bonus bAtkRange,8; bonus bAspd,15;}
+7156:13251,{ bonus bAtkRange,8; bonus bAspd,15;}
+7156:13252,{ bonus bAtkRange,8; bonus bAspd,15;}
+7156:13253,{ bonus bAtkRange,8; bonus bAspd,15;}
+7156:13254,{ bonus bAtkRange,8; bonus bAspd,15;}
+7156:13295,{ bonus bAtkRange,8; bonus bAspd,15;}
