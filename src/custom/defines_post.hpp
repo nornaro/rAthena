@@ -1,4 +1,4 @@
-﻿// Copyright (c) rAthena Dev Teams - Licensed under GNU GPL
+// Copyright (c) rAthena Dev Teams - Licensed under GNU GPL
 // For more information, see LICENCE in the main folder
 
 #ifndef CONFIG_CUSTOM_DEFINES_POST_HPP
@@ -9,6 +9,6 @@
  * For detailed guidance on these check http://rathena.org/wiki/SRC/config/
  **/
 
-#define PACKETVER 20190821
+#define PACKETVER 20180418
 
 #endif /* CONFIG_CUSTOM_DEFINES_POST_HPP */

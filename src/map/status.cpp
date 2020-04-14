@@ -4089,13 +4089,25 @@ int status_calc_pc_sub(struct map_session_data* sd, enum e_status_calc_opt opt)
 		sd->def_rate = 0;
 	if(sd->def_rate != 100) {
 		i = base_status->def * sd->def_rate/100;
+#ifdef RENEWAL
+#ifdef RENEWAL_DB
 		base_status->def = cap_value(i, DEFTYPE_MIN, DEFTYPE_MAX);
+#else
+		base_status->def = cap_value(i * 10, DEFTYPE_MIN, DEFTYPE_MAX);
+#endif
+#else
+#ifdef RENEWAL_DB
+		base_status->def = cap_value(i / 10, DEFTYPE_MIN, DEFTYPE_MAX);
+#else
+		base_status->def = cap_value(i, DEFTYPE_MIN, DEFTYPE_MAX);
+#endif
+#endif
 	}
 
 	if(pc_ismadogear(sd) && pc_checkskill(sd, NC_MAINFRAME) > 0)
 		base_status->def += 20 + (pc_checkskill(sd, NC_MAINFRAME) * 20);
 
-#ifndef RENEWAL
+#ifndef RENEWAL_DB
 	if (!battle_config.weapon_defense_type && base_status->def > battle_config.max_def) {
 		base_status->def2 += battle_config.over_def_bonus*(base_status->def -battle_config.max_def);
 		base_status->def = (unsigned char)battle_config.max_def;
@@ -4112,7 +4124,7 @@ int status_calc_pc_sub(struct map_session_data* sd, enum e_status_calc_opt opt)
 		base_status->mdef = cap_value(i, DEFTYPE_MIN, DEFTYPE_MAX);
 	}
 
-#ifndef RENEWAL
+#ifndef RENEWAL_DB
 	if (!battle_config.magic_defense_type && base_status->mdef > battle_config.max_def) {
 		base_status->mdef2 += battle_config.over_def_bonus*(base_status->mdef -battle_config.max_def);
 		base_status->mdef = (signed char)battle_config.max_def;
@@ -6589,7 +6601,7 @@ static defType status_calc_def(struct block_list *bl, struct status_change *sc, 
 	if(sc->data[SC_GLASTHEIM_ITEMDEF])
 		def += sc->data[SC_GLASTHEIM_ITEMDEF]->val1;
 
-	return (defType)cap_value(def,DEFTYPE_MIN,DEFTYPE_MAX);
+	return (defType)cap_value(def,0,1000);
 }
 
 /**

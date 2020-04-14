@@ -43,7 +43,7 @@
 /**
  * DefType
  **/
-#ifdef RENEWAL
+#ifdef RENEWAL_DB
 	typedef short defType;
 	#define DEFTYPE_MIN SHRT_MIN
 	#define DEFTYPE_MAX SHRT_MAX
@@ -61,7 +61,7 @@
 #endif
 
 /* ATCMD_FUNC(mobinfo) HIT and FLEE calculations */
-#ifdef RENEWAL
+#ifdef RENEWAL_FLEE
 	#define MOB_FLEE(mob) ( mob->lv + mob->status.agi + 100 )
 	#define MOB_HIT(mob)  ( mob->lv + mob->status.dex + 175 )
 #else

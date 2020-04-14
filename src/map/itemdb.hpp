@@ -814,7 +814,7 @@ struct item_data
 	int wlv;
 	int view_id;
 	int elvmax; ///< Maximum level for this item
-#ifdef RENEWAL
+#ifdef RENEWAL_DB
 	int matk;
 #endif
 

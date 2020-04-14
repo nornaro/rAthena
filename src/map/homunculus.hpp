@@ -9,7 +9,7 @@
 #include "status.hpp" // struct status_data, struct status_change
 #include "unit.hpp" // struct unit_data
 
-#ifdef RENEWAL
+#ifdef RENEWAL_HOMUN
 	#define	HOMUN_LEVEL_STATWEIGHT_VALUE 0
 	#define APPLY_HOMUN_LEVEL_STATWEIGHT()( \
 		hom->str_value = hom->agi_value = \

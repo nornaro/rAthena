@@ -67,7 +67,7 @@ char buyingstores_table[32] = "buyingstores";
 char buyingstore_items_table[32] = "buyingstore_items";
 char item_cash_table[32] = "item_cash_db";
 char item_cash2_table[32] = "item_cash_db2";
-#ifdef RENEWAL
+#ifdef RENEWAL_DB
 char item_table[32] = "item_db_re";
 char item2_table[32] = "item_db2_re";
 char mob_table[32] = "mob_db_re";

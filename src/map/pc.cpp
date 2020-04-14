@@ -1235,12 +1235,14 @@ uint8 pc_isequip(struct map_session_data *sd,int n)
 
 	if(item == NULL)
 		return ITEM_EQUIP_ACK_FAIL;
-	if(item->elv && sd->status.base_level < (unsigned int)item->elv)
-		return ITEM_EQUIP_ACK_FAILLEVEL;
-	if(item->elvmax && sd->status.base_level > (unsigned int)item->elvmax)
-		return ITEM_EQUIP_ACK_FAILLEVEL;
-	if(item->sex != 2 && sd->status.sex != item->sex)
-		return ITEM_EQUIP_ACK_FAIL;
+	if (battle_config.enable_lvl_restriction) {
+		if (item->elv && sd->status.base_level < (unsigned int)item->elv)
+			return ITEM_EQUIP_ACK_FAILLEVEL;
+		if (item->elvmax && sd->status.base_level > (unsigned int)item->elvmax)
+			return ITEM_EQUIP_ACK_FAILLEVEL;
+		if (item->sex != 2 && sd->status.sex != item->sex)
+			return ITEM_EQUIP_ACK_FAIL;
+	}
 
 	//fail to equip if item is restricted
 	if (!battle_config.allow_equip_restricted_item && itemdb_isNoEquip(item, sd->bl.m))
@@ -2897,7 +2899,7 @@ void pc_bonus(struct map_session_data *sd,int type,int val)
 		case SP_DEF1:
 			if(sd->state.lr_flag != 2) {
 				bonus = status->def + val;
-#ifdef RENEWAL
+#ifdef RENEWAL_DB
 				status->def = cap_value(bonus, SHRT_MIN, SHRT_MAX);
 #else
 				status->def = cap_value(bonus, CHAR_MIN, CHAR_MAX);
@@ -2913,7 +2915,7 @@ void pc_bonus(struct map_session_data *sd,int type,int val)
 		case SP_MDEF1:
 			if(sd->state.lr_flag != 2) {
 				bonus = status->mdef + val;
-#ifdef RENEWAL
+#ifdef RENEWAL_DB
 				status->mdef = cap_value(bonus, SHRT_MIN, SHRT_MAX);
 #else
 				status->mdef = cap_value(bonus, CHAR_MIN, CHAR_MAX);

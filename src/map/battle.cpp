@@ -3694,7 +3694,7 @@ static int battle_calc_attack_skill_ratio(struct Damage* wd, struct block_list *
 			if (battle_config.splasher_hp &&
 				((tstatus->hp / tstatus->max_hp) <= (battle_config.splasher_hp / 100)) &&
 				(tsc && tsc->data[SC_POISON])) {
-				ATK_ADD(wd->masteryAtk, wd->masteryAtk2, tstatus->hp);
+				ATK_ADD(wd->damage, wd->damage2, tstatus->hp);
 			}
 			skillratio += 400 + 50 * skill_lv;
 			if (sc && sc->data[SC_POISONREACT])
@@ -4594,7 +4594,7 @@ static void battle_attack_sc_bonus(struct Damage* wd, struct block_list *src, st
 				case AS_POISONREACT:
 				case AS_VENOMDUST:
 				case TF_POISON:
-					ATK_ADDRATE(wd->weaponAtk, wd->weaponAtk2, sc->data[SC_ENCPOISON]->val2/10);
+					ATK_ADDRATE(wd->damage, wd->damage2, sc->data[SC_ENCPOISON]->val2/10);
 					break;
 				default:
 					ATK_ADDRATE(wd->damage, wd->damage2, sc->data[SC_ENCPOISON]->val3/10);
@@ -4725,7 +4725,7 @@ static void battle_calc_defense_reduction(struct Damage* wd, struct block_list *
 	defType def1 = status_get_def(target); //Don't use tstatus->def1 due to skill timer reductions.
 	short def2 = tstatus->def2;
 
-#ifdef RENEWAL
+#ifdef RENEWAL_DEF
 	if( tsc && tsc->data[SC_ASSUMPTIO] )
 		def1 <<= 1; // only eDEF is doubled
 #endif
@@ -4793,7 +4793,7 @@ static void battle_calc_defense_reduction(struct Damage* wd, struct block_list *
 			}
 		}
 		if (skill_id == AM_ACIDTERROR)
-#ifdef RENEWAL
+#ifdef RENEWAL_DEF
 			def2 = 0; //Ignore only status defense. [FatalEror]
 #else
 			def1 = 0; //Ignores only armor defense. [Skotlex]
@@ -4805,7 +4805,7 @@ static void battle_calc_defense_reduction(struct Damage* wd, struct block_list *
 	//Vitality reduction from rodatazone: http://rodatazone.simgaming.net/mechanics/substats.php#def
 	if (tsd) {	//Sd vit-eq
 		int skill;
-#ifndef RENEWAL
+#ifndef RENEWAL_DEF
 		//[VIT*0.5] + rnd([VIT*0.3], max([VIT*0.3],[VIT^2/150]-1))
 		vit_def = def2*(def2-15)/150;
 		vit_def = def2/2 + (vit_def>0?rnd()%vit_def:0);
@@ -4822,7 +4822,7 @@ static void battle_calc_defense_reduction(struct Damage* wd, struct block_list *
 			(sstatus->def_ele == ELE_FIRE || sstatus->def_ele == ELE_EARTH) )
 			vit_def += skill * 10;
 	} else { //Mob-Pet vit-eq
-#ifndef RENEWAL
+#ifndef RENEWAL_DEF
 		//VIT + rnd(0,[VIT/20]^2-1)
 		vit_def = (def2/20)*(def2/20);
 		if (tsc && tsc->data[SC_SKA])
@@ -4839,12 +4839,13 @@ static void battle_calc_defense_reduction(struct Damage* wd, struct block_list *
 		def1 = 0;
 	}
 
-#ifdef RENEWAL
+#ifdef RENEWAL_DEF
 	/**
 	 * RE DEF Reduction
 	 * Damage = Attack * (4000+eDEF)/(4000+eDEF*10) - sDEF
 	 * Pierce defence gains 1 atk per def/2
 	 */
+	def1 = def1 * battle_config.def_adjust_rate;
 	if( def1 == -400 ) /* -400 creates a division by 0 and subsequently crashes */
 		def1 = -399;
 	ATK_ADD2(wd->damage, wd->damage2,
@@ -4857,6 +4858,7 @@ static void battle_calc_defense_reduction(struct Damage* wd, struct block_list *
 		wd->damage2 = wd->damage2 * (4000+def1) / (4000+10*def1) - vit_def;
 
 #else
+		def1 = def1 / battle_config.def_adjust_rate;
 		if (def1 > 100) def1 = 100;
 		ATK_RATE2(wd->damage, wd->damage2,
 			attack_ignores_def(wd, src, target, skill_id, skill_lv, EQI_HAND_R) ?100:(is_attack_piercing(wd, src, target, skill_id, skill_lv, EQI_HAND_R) ? (int64)is_attack_piercing(wd, src, target, skill_id, skill_lv, EQI_HAND_R)*(def1+vit_def) : (100-def1)),
@@ -6371,10 +6373,10 @@ struct Damage battle_calc_magic_attack(struct block_list *src,struct block_list 
 
 			ad.damage = ad.damage * (1000 + mdef) / (1000 + mdef * 10) - mdef2;
 #else
-			if(battle_config.magic_defense_type)
-				ad.damage = ad.damage - mdef*battle_config.magic_defense_type - mdef2;
+			if (battle_config.magic_defense_type)
+				ad.damage = ad.damage - mdef * battle_config.magic_defense_type - mdef2;
 			else
-				ad.damage = ad.damage * (100-mdef)/100 - mdef2;
+				ad.damage = ad.damage * (100 - mdef) / 100 - mdef2;
 #endif
 		}
 #if 0 // Doesn't seem to be official
@@ -8502,12 +8504,12 @@ static const struct _battle_data {
 	{ "bg_misc_attack_damage_rate",         &battle_config.bg_misc_damage_rate,             60,     0,      INT_MAX,        },
 	{ "bg_flee_penalty",                    &battle_config.bg_flee_penalty,                 20,     0,      INT_MAX,        },
 // rAthena
-	{ "max_third_parameter",				&battle_config.max_third_parameter,				135,	10,		SHRT_MAX,		},
-	{ "max_baby_third_parameter",			&battle_config.max_baby_third_parameter,		108,	10,		SHRT_MAX,		},
-	{ "max_trans_parameter",				&battle_config.max_trans_parameter,				99,		10,		SHRT_MAX,		},
-	{ "max_third_trans_parameter",			&battle_config.max_third_trans_parameter,		135,	10,		SHRT_MAX,		},
-	{ "max_extended_parameter",				&battle_config.max_extended_parameter,			125,	10,		SHRT_MAX,		},
-	{ "max_summoner_parameter",				&battle_config.max_summoner_parameter,			120,	10,		SHRT_MAX,		},
+	{ "max_third_parameter",                &battle_config.max_third_parameter,             135,    10,     SHRT_MAX,       },
+	{ "max_baby_third_parameter",           &battle_config.max_baby_third_parameter,        108,    10,     SHRT_MAX,       },
+	{ "max_trans_parameter",                &battle_config.max_trans_parameter,             99,	    10,     SHRT_MAX,       },
+	{ "max_third_trans_parameter",          &battle_config.max_third_trans_parameter,       135,    10,     SHRT_MAX,       },
+	{ "max_extended_parameter",             &battle_config.max_extended_parameter,          125,    10,     SHRT_MAX,       },
+	{ "max_summoner_parameter",             &battle_config.max_summoner_parameter,          120,    10,     SHRT_MAX,       },
 	{ "skill_amotion_leniency",             &battle_config.skill_amotion_leniency,          0,      0,      300             },
 	{ "mvp_tomb_enabled",                   &battle_config.mvp_tomb_enabled,                1,      0,      1               },
 	{ "mvp_tomb_delay",                     &battle_config.mvp_tomb_delay,                  9000,   0,      INT_MAX,        },
@@ -8520,6 +8522,9 @@ static const struct _battle_data {
 	{ "skill_trap_type",                    &battle_config.skill_trap_type,                 0,      0,      3,              },
 	{ "allow_consume_restricted_item",      &battle_config.allow_consume_restricted_item,   1,      0,      1,              },
 	{ "allow_equip_restricted_item",        &battle_config.allow_equip_restricted_item,     1,      0,      1,              },
+	{ "enable_lvl_restriction",             &battle_config.enable_lvl_restriction,          1,      0,      1,              },
+	{ "def_adjust_rate",                    &battle_config.def_adjust_rate,                 10,     0,      CHAR_MAX,       },
+	{ "mdef_adjust_rate",                   &battle_config.mdef_adjust_rate,                1,      0,      CHAR_MAX,       },
 	{ "max_walk_path",                      &battle_config.max_walk_path,                   17,     1,      MAX_WALKPATH,   },
 	{ "item_enabled_npc",                   &battle_config.item_enabled_npc,                1,      0,      1,              },
 	{ "item_flooritem_check",               &battle_config.item_onfloor,                    1,      0,      1,              },

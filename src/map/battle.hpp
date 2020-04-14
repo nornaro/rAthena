@@ -547,6 +547,9 @@ struct Battle_Config
 	int skill_trap_type;
 	int allow_consume_restricted_item;
 	int allow_equip_restricted_item;
+	int enable_lvl_restriction;
+	int def_adjust_rate;
+	int mdef_adjust_rate;
 	int max_walk_path;
 	int item_enabled_npc;
 	int item_onfloor; // Whether to drop an undroppable item on the map or destroy it if inventory is full.

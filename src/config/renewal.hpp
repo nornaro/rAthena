@@ -21,7 +21,7 @@
 /// (disable by commenting the line)
 ///
 /// Leave this line to enable renewal specific support such as renewal formulas
-#define RENEWAL
+//#define RENEWAL
 
 /// Renewal cast time
 /// (disable by commenting the line)
@@ -73,6 +73,15 @@
 /// Leave this line to enable renewal calculation for increasing status/parameter points
 //#define RENEWAL_STAT
 
+//#define RENEWAL_DEF
+/// Use RE def calculation
+
+#define RENEWAL_DB
+/// Use RE database
+
+#define RENEWAL_HOMUN
+
+//#define RENEWAL_FLEE
 #endif
 
 #endif /* CONFIG_RENEWAL_HPP */
