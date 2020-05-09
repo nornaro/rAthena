@@ -1,0 +1,673 @@
+-	script	Player Services::AIO_Kafra	864,{
+// ------ rAthena Script Release
+// Title: All In One Kafra
+// Current Version: 0.1 (Beta), 2020.05.02.
+function AddMapTown { //adds town maps
+	if(getmapusers(getarg(0)) >= 0) {
+		set .@a$, "[" + (.maptCount) + "]";
+		set .@b$, "$[" + (.maptCount) + "]";
+
+		setd ".mapt_map" + .@b$, getarg(0);
+		setd ".mapt_x" + .@a$, getarg(1);
+		setd ".mapt_y" + .@a$, getarg(2);
+		setd ".mapt_name" + .@b$, getarg(3);
+		set .maptCount, .maptCount + 1;
+	} else {
+		debugmes("SUPER KAFRA - BADMAP: " + getarg(3) + " - " + getarg(0));
+	}
+}
+function AddMapDung { //adds dungeon maps
+	if(getmapusers(getarg(0)) >= 0) {
+		set .@a$, "[" + (.mapdCount) + "]";
+		set .@b$, "$[" + (.mapdCount) + "]";
+
+		setd ".mapd_map" + .@b$, getarg(0);
+		setd ".mapd_x" + .@a$, getarg(1);
+		setd ".mapd_y" + .@a$, getarg(2);
+		setd ".mapd_name" + .@b$, getarg(3);
+		set .mapdCount, .mapdCount + 1;
+	} else {
+		debugmes("SUPER KAFRA - BADMAP: " + getarg(3) + " - " + getarg(0));
+	}
+}
+// ------------------------------------------------------------------------------------------
+// Actual script....
+// ------------------------------------------------------------------------------------------
+mes .@n$;
+mes "Hello, "+strcharinfo(0)+"! I'm able to teleport you to various locations, open your storage or mail, set your save point to your current location, or adjust your account options.";
+mes "How may I assist you "+.@daynight$+"?";
+next;
+	switch(select("Previous Warp (^0374BB"+lastwarpname$+"^000000):Town Warps:Dungeon Warps:Save (Current Location):Open Storage:Open Mail:Account Options:Show Auctions:Skill/Stat Reset")) {
+	case 1: //previous warp
+		if(lastx < 1) {
+			mes .@n$;
+			mes "You have to warp somewhere first!";
+			close;
+			end; }
+		warp	lastwarp$,	lastx,	lasty;	end;
+	case 2:	//town warps
+		mes .@n$;
+		mes "Please select your destination.";
+		next;
+
+		// Generate Menu
+		for (set .@a, 0; .@a < .maptCount; set .@a, .@a + 1) {
+			set .@menu_maps$[getarraysize(.@menu_maps$)], .mapt_name$[.@a];
+			set .@menu_index[getarraysize(.@menu_index)], .@a;
+		}  
+
+		// Generate the Menu String
+		set .@menu$, .@menu_maps$[0];
+		for (set .@a, 1; .@a < getarraysize(.@menu_maps$); set .@a, .@a + 1) {
+			set .@menu$, .@menu$ + ":" + .@menu_maps$[.@a];
+		}
+		set .@a, select(.@menu$) - 1;
+		set lastwarp$, .mapt_map$[.@a];
+		set lastx, .mapt_x[.@a];
+		set lasty, .mapt_y[.@a];
+		set lastwarpname$, .mapt_name$[.@a];
+		warp .mapt_map$[.@a], .mapt_x[.@a], .mapt_y[.@a];
+		
+	case 3:	 //dungeon warps
+		mes .@n$;
+		mes "Please select your destination.";
+		next;
+		// Generate Menu
+		for (set .@a, 0; .@a < .mapdCount; set .@a, .@a + 1) {
+			set .@menu_maps$[getarraysize(.@menu_maps$)], .mapd_name$[.@a];
+			set .@menu_index[getarraysize(.@menu_index)], .@a;
+		}  
+
+		// Generate the Menu String
+		set .@menu$, .@menu_maps$[0];
+		for (set .@a, 1; .@a < getarraysize(.@menu_maps$); set .@a, .@a + 1) {
+			set .@menu$, .@menu$ + ":" + .@menu_maps$[.@a];
+		}
+		set .@a, select(.@menu$) - 1;
+		set lastwarp$, .mapd_map$[.@a];
+		set lastx, .mapd_x[.@a];
+		set lasty, .mapd_y[.@a];
+		set lastwarpname$, .mapd_name$[.@a];
+		warp .mapd_map$[.@a], .mapd_x[.@a], .mapd_y[.@a];
+		
+		
+	case 4: //save current loc
+		if($saveanywhere == 0) {
+			if(getmapflag(.@map$,mf_town) == 0) {
+				mes .@n$;
+				mes "The administrative team has chosen to restrict save point locations from being accessed outside of town maps. Please head to the nearest town to set your save point.";
+				close; end;
+			}
+		}
+		savepoint .@map$,.@x,.@y;
+		mes .@n$;
+		mes "Your save point has been updated to your current location: ^FF0000"+.@map$+", "+.@x+", "+.@y+"^000000.";
+		close;
+		end;
+		
+	case 5: //open storage
+		if($storageanywhere == 0) {
+			if(getmapflag(.@map$,mf_town) == 0) {
+				mes .@n$;
+				mes "The administrative team has chosen to restrict storage from being accessed outside of town maps. Please head to the nearest town to access your storage.";
+				close;
+				end;
+			}
+		}
+		if(#storagepw == 1) {
+			mes .@n$;
+			mes "Please insert your storage password to continue.";
+			next;
+			input .@pw$;
+			if(.@pw$ == #storagepw$) {
+				mes .@n$;
+				mes "Would you like to simply open your storage, set an account password for extra security, or remove your storage password (not recommended)?";
+				next;
+				menu "Open Storage",-,"Set Storage Password",L_stpass,"Remove Password",L_pwremove;
+				close2;
+				openstorage;
+				end;
+			} else {
+				mes .@n$;
+				mes "The password you inserted does not match the password on record for this account. Please try again.";
+				close;
+				end;
+			}
+		} else {
+			mes .@n$;
+			mes "Would you like to simply open your storage, or set an account password for extra security?";
+			next;
+			menu "Open Storage",-,"Set Storage Password",L_stpass;
+
+			close2;
+			openstorage;
+			end;
+		}
+		
+	case 6: //open mail
+		if($mailanywhere == 0) {
+			if(getmapflag(.@map$,mf_town) == 0) {
+				mes .@n$;
+				mes "The administrative team has chosen to restrict mail from being accessed outside of town maps. Please head to the nearest town to access your mail.";
+				close;
+				end;
+			}
+		}
+		if(#mailpw == 1) {
+			mes .@n$;
+			mes "Please insert your mail password to continue.";
+			next;
+			input .@pw$;
+			if(.@pw$ == #mailpw$) {
+				mes .@n$;
+				mes "Would you like to simply open your mail, set an account password for extra security, or remove your mail password (not recommended)?";
+				next;
+				menu "Open Mail",-,"Set Mail Password",L_mpass,"Remove Password",L_pwmremove;
+				close2;
+				openmail;
+				end;
+			} else {
+				mes .@n$;
+				mes "The password you inserted does not match the password on record for this account. Please try again.";
+				close;
+				end;
+			}
+		} else {
+			mes .@n$;
+			mes "Would you like to simply open your mail, or set an account password for extra security?";
+			next;
+			menu "Open Mail",-,"Set Mail Password",L_mpass;
+
+			close2;
+			openmail;
+			end;
+		}
+	
+	case 7: //acount options
+		set @reset$,"^000000";
+		set @disabled$,"^BE1C1C";
+		set @enabled$,"^0DB40D";
+		
+		// this section needs cases applied
+		L_usermenu:
+			mes .@n$;
+			mes "You can change the way the game works here.";
+			mes "Note: These are all account based, not per-character.";
+			mes "Note 2: You must relog for them to take effect.";
+			next;
+			if (#set_main == 0) set @st_main$,@disabled$+"Off"+@reset$;
+			if (#set_main > 0) set @st_main$,@enabled$+"On"+@reset$;
+			if (#set_autoloot == 0) set @st_autoloot$,@disabled$+"Off"+@reset$;
+			if (#set_autoloot > 0) set @st_autoloot$,@enabled$+#set_autoloot+"%"+@reset$;
+			if (#set_showdelay == 0) set @st_showdelay$,@disabled$+"Off"+@reset$;
+			if (#set_showdelay > 0) set @st_showdelay$,@enabled$+"On"+@reset$;
+			if (#set_showexp == 0) set @st_showexp$,@disabled$+"Off"+@reset$;
+			if (#set_showexp > 0) set @st_showexp$,@enabled$+"On"+@reset$;
+			if (#set_showzeny == 0) set @st_showzeny$,@disabled$+"Off"+@reset$;
+			if (#set_showzeny > 0) set @st_showzeny$,@enabled$+"On"+@reset$;
+			if (#set_uptime == 0) set @st_uptime$,@disabled$+"Off"+@reset$;
+			if (#set_uptime > 0) set @st_uptime$,@enabled$+"On"+@reset$;
+			if (#set_mail == 0) set @st_mail$,@disabled$+"Off"+@reset$;
+			if (#set_mail > 0) set @st_mail$,@enabled$+"On"+@reset$;
+			if (#set_ks == 0) set @st_ks$,@disabled$+"Off"+@reset$;
+			if (#set_ks > 0) set @st_ks$,@enabled$+"On"+@reset$;
+			menu "Main Chat ["+@st_main$+"]",e_main,"Kill Stealing ["+@st_ks$+"]",e_ks,"Auto Loot ["+@st_autoloot$+"]",e_autoloot,"Show Delay ["+@st_showdelay$+"]",e_showdelay,"Show Exp ["+@st_showexp$+"]",e_showexp,"Show Zeny ["+@st_showzeny$+"]",e_showzeny,"Uptime on login ["+@st_uptime$+"]",e_uptime,"Mail On Login ["+@st_mail$+"]",e_mailz;
+
+		e_main:
+			mes .@n$;
+			mes "Enable @main on login "+@st_main$;
+			mes "Desc: Turn main chat on automatically each time you login.";
+			next;
+			menu "Toggle",-,"Back",L_usermenu;
+			if (#set_main == 0) {
+				set #set_main,1;
+				goto L_usermenu;
+			}
+			if (#set_main == 1) {
+				set #set_main,0;
+				goto L_usermenu;
+			}
+
+		e_ks:
+			mes .@n$;
+			mes "Enable @noks (kill stealing protection) on login "+@st_ks$;
+			mes "Desc: Turn no kill stealing on automatically each time you login.";
+			next;
+			menu "Toggle",-,"Back",L_usermenu;
+			if (#set_ks == 0) {
+				set #set_ks,1;
+				goto L_usermenu;
+			}
+			if (#set_ks == 1) {
+				set #set_ks,0;
+				goto L_usermenu;
+			}
+
+		e_autoloot:
+			mes .@n$;
+			mes "Auto Loot is currently "+@st_autoloot$;
+			mes "Desc: Auto loot adds items to your inventory automatically.";
+			next;
+			menu "Toggle",-,"Back",L_usermenu;
+			mes .@n$;
+			mes "Auto Loot is currently "+@st_autoloot$;
+			mes "Enter the minimum rate an item must drop at before it it looted, 100 will loot all items, 99 will only loot cards, 0 disables it.";
+			next;
+			input @rate;
+			if ((@rate >= 0) && (@rate <= 100)) set #set_autoloot,@rate;
+			goto L_usermenu;
+
+		e_showdelay:
+			mes .@n$;
+			mes "Show Delay is currently "+@st_showdelay$;
+			mes "Desc: When a skill fails because of delay, it will be hidden.";
+			next;
+			menu "Toggle",-,"Back",L_usermenu;
+			if (#set_showdelay == 0) {
+				set #set_showdelay,1;
+				goto L_usermenu;
+			}
+			if (#set_showdelay == 1) {
+				set #set_showdelay,0;
+				goto L_usermenu;
+			}
+
+		e_showexp:
+			mes .@n$;
+			mes "Show Exp is currently "+@st_showexp$;
+			mes "Desc: When you gain exp, it will be displayed.";
+			next;
+			menu "Toggle",-,"Back",L_usermenu;
+			if (#set_showexp == 0) {
+				set #set_showexp,1;
+				goto L_usermenu;
+			}
+			if (#set_showexp == 1) {
+				set #set_showexp,0;
+				goto L_usermenu;
+			}
+
+		e_showzeny:
+			mes .@n$;
+			mes "Show Zeny is currently "+@st_showzeny$;
+			mes "Desc: When you gain zeny, it will be displayed.";
+			next;
+			menu "Toggle",-,"Back",L_usermenu;
+			if (#set_showzeny == 0) {
+				set #set_showzeny,1;
+				goto L_usermenu;
+			}
+			if (#set_showzeny == 1) {
+				set #set_showzeny,0;
+				goto L_usermenu;
+			}
+
+		e_uptime:
+			mes .@n$;
+			mes "Uptime on login is currently "+@st_uptime$;
+			mes "Desc: When you log in, server uptime will be displayed.";
+			next;
+			menu "Toggle",-,"Back",L_usermenu;
+			if (#set_uptime == 0) {
+				set #set_uptime,1;
+				goto L_usermenu;
+			}
+			if (#set_uptime == 1) {
+				set #set_uptime,0;
+				goto L_usermenu;
+			}
+
+		e_who:
+			mes .@n$;
+			mes "@who on login is currently "+@st_who$;
+			mes "Desc: When you log in, players online will be displayed.";
+			next;
+			menu "Toggle",-,"Back",L_usermenu;
+			if (#set_who == 0) {
+				set #set_who,1;
+				goto L_usermenu;
+			}
+			if (#set_who == 1) {
+				set #set_who,0;
+				goto L_usermenu;
+			}
+
+		e_mailz:
+			mes .@n$;
+			mes "Open inbox on login is currently "+@st_mail$;
+			mes "Desc: When you log in, if you're in Prontera your mail inbox will open.";
+			next;
+			menu "Toggle",-,"Back",L_usermenu;
+			if (#set_mail == 0) {
+				set #set_mail,1;
+				goto L_usermenu;
+			}
+			if (#set_mail == 1) {
+				set #set_mail,0;
+				goto L_usermenu;
+			}
+
+		end;
+	case 8: //show auctions
+		if($auctionanywhere == 0) {
+			if(getmapflag(.@map$,mf_town) == 0) {
+				mes .@n$;
+				mes "The administrative team has chosen to restrict auctions from being accessed outside of town maps. Please head to the nearest town to view the auction listings.";
+				close;
+				end;
+			}
+		}
+		mes .@n$;
+		mes "As you wish, here are the latest auctions.";
+		close2;
+		OpenAuction;
+		end;
+		
+	case 9: //skill/stat reset
+		if($resetanywhere == 0) {
+			if(getmapflag(.@map$,mf_town) == 0) {
+				mes .@n$;
+				mes "The administrative team has chosen to restrict skill/stat resets from being performed outside of town maps. Please head to the nearest town to perform this action.";
+				close;
+				end;
+			}
+		}
+		mes .@n$;
+		mes "What would you like to reset?";
+		next;
+		switch(select("Skills ("+$skresetprice+" Zeny):Stats ("+$stresetprice+" Zeny):Both ("+$allresetprice+" Zeny)")) {
+
+			case 1: //skill
+				if(Zeny < $skresetprice) goto L_nozeny;
+				mes .@n$;
+				mes "Your skills have been reset.";
+				set Zeny,Zeny - $skresetprice;
+				ResetSkill;
+				close;
+				end;
+
+			case 2: //stat
+				if(Zeny < $stresetprice) goto L_nozeny;
+				mes .@n$;
+				mes "Your stats have been reset.";
+				set Zeny,Zeny - $stresetprice;
+				ResetStatus;
+				close;
+				end;
+
+			case 3: //both
+				if(Zeny < $allresetprice) goto L_nozeny;
+				mes .@n$;
+				mes "Your skills and stats have been reset.";
+				set Zeny,Zeny - $allresetprice;
+				ResetSkill;
+				ResetStatus;
+				close;
+				end;
+		}
+}
+
+L_mpass:
+mes .@n$;
+mes "What would you like your password to be?";
+next;
+input .@temp1$;
+mes .@n$;
+mes "Please confirm that the password you entered is correct by re-typing it:";
+next;
+input .@temp2$;
+if(.@temp1$ == .@temp2$) {
+set #mailpw$,.@temp1$;
+set #mailpw,1;
+mes .@n$;
+mes "Your mail password has been set to: ^FF0000"+#mailpw$+"^000000";
+close;
+end;
+}
+else {
+mes .@n$;
+mes "The passwords you've input do not match. Please try again.";
+close;
+end;
+}
+
+L_pwmremove:
+mes .@n$;
+mes "Your mail password has been removed.";
+set #mailpw,0;
+set #mailpw$,"null";
+close;
+end;
+
+L_stpass:
+mes .@n$;
+mes "What would you like your password to be?";
+next;
+input .@temp1$;
+mes .@n$;
+mes "Please confirm that the password you entered is correct by re-typing it:";
+next;
+input .@temp2$;
+if(.@temp1$ == .@temp2$) {
+set #storagepw$,.@temp1$;
+set #storagepw,1;
+mes .@n$;
+mes "Your storage password has been set to: ^FF0000"+#storagepw$+"^000000";
+close;
+end;
+}
+else {
+mes .@n$;
+mes "The passwords you've input do not match. Please try again.";
+close;
+end;
+}
+
+L_pwremove:
+mes .@n$;
+mes "Your storage password has been removed.";
+set #storagepw,0;
+set #storagepw$,"null";
+close;
+end;
+
+// ------------------------------------------------------------------------------------------
+OnInit:
+// Options
+// To enable a feature, set it to 1.
+// Refer to the comments to the right for full details.
+set $pshealer,1;				 // Allow free 100% heals when NPC is spoken to. Default: Enabled (1)
+set $healanywhere,0;				 // Allow players to heal from maps not flagged as 'town' maps. Default: Disabled (0)
+set $storageanywhere,0;			 // Allow storage access from maps not flagged as 'town' maps. Default: Disabled (0)
+set $mailanywhere,0;				 // Allow mail access from maps not flagged as 'town' maps. Default: Disabled (0) Note: You must set each map as a "town" via mapflag. See npc/other/mail.txt for the format. If you fail to do this, mail cannot be accessed from many maps.
+set .@n$,"^003377[ Player Services ]^006699";	 // Name displayed in the NPC's dialogue. Changes NPC dialogue colors as well. Default: Player Services, 003377 (Name), 006699 (Content)
+set $saveanywhere,0;				 // Allow players to save from maps not flagged as 'town' maps. Default: Disabled (0)
+set $auctionanywhere,0;			 // Allow players to access auction window from maps not flagged as 'town' maps. Default: Disabled (0)
+set $resetanywhere,0;				 // Allow players to save from maps not flagged as 'town' maps. Default: Disabled (0)
+set $allresetprice,50000;			 // Price to reset both Status and Skill Points. Default: 50,000z
+set $skresetprice,35000;			 // Price to reset Skill Points. Default: 35,000z
+set $stresetprice,35000;			 // Price to reset Status Points. Default: 35,000z
+callsub(LoadData);					// Adds maps to warp system
+end;
+
+LoadData:
+		//reset data;
+		set .maptCount, 0;
+		set .mapdCount, 0;
+		
+		//Towns
+		AddMapTown("alberta",27,236,"Alberta");
+		AddMapTown("aldebaran",145,120,"Aldebaran");
+		AddMapTown("amatsu",116,152,"Amatsu");
+		AddMapTown("ayothaya",149,118,"Ayothoya");
+		AddMapTown("brasilis",199,140,"Brasilis");
+		AddMapTown("comodo",188,161,"Comodo");
+		AddMapTown("dewata",199,107,"Dewata");
+		AddMapTown("dicastes01",198,195,"El Dicastes");
+		//AddMapTown("eclage",107,35,"Eclage");
+		AddMapTown("einbech",70,95,"Einbech");
+		AddMapTown("einbroch",64,200,"Einbroch");
+		AddMapTown("geffen",119,66,"Geffen");
+		AddMapTown("gonryun",150,130,"Gonryun");
+		AddMapTown("hugel",96,145,"Hugel");
+		AddMapTown("izlude",128,111,"Izlude");
+		AddMapTown("jawaii",211,230,"Jawaii");
+		AddMapTown("lighthalzen",158,92,"Lighthalzen");
+		AddMapTown("louyang",210,108,"Louyang");
+		AddMapTown("malangdo",214,93,"Malangdo Island");
+		//AddMapTown("malaya",276,54,"Port Malaya");
+		AddMapTown("manuk",189,186,"Manuk");
+		AddMapTown("mid_camp",210,283,"Midgard Camp");
+		AddMapTown("moc_ruins",101,106,"Morocc Ruins");
+		AddMapTown("morocc",159,93,"Morocc");
+		AddMapTown("moscovia",223,190,"Moscovia");
+		AddMapTown("niflheim",35,161,"Niflheim");
+		AddMapTown("payon",176,103,"Payon");
+		AddMapTown("prontera",156,187,"Prontera");
+		AddMapTown("rachel",130,110,"Rachel");
+		AddMapTown("splendide",198,172,"Splendide");
+		AddMapTown("umbala",130,130,"Umbala");
+		AddMapTown("veins",216,127,"Veins");
+		AddMapTown("xmas",148,131,"Lutie");
+		AddMapTown("yuno",160,168,"Yuno");	
+		
+		//Dungeons
+		AddMapDung("alb2trea",75,98,"Sunken Ship");
+		AddMapDung("ama_fild01",174,324,"Amatsu Dungeon");
+		AddMapDung("ayo_fild02",280,149,"Ayathoya Dungeon");
+		AddMapDung("bra_in01",206,185,"Brasilis Dungeon");
+		AddMapDung("cmd_fild07",131,129,"Paros Lighthouse");
+		AddMapDung("dew_fild01",52,65,"Dewata Dungeon");
+		AddMapDung("einbech",135,249,"Einbech Dungeon");
+		AddMapDung("gef_fild10",70,332,"Orc Dungeon");
+		AddMapDung("gef_fild10",242,199,"Orc's Memory");
+		AddMapDung("gef_tower",152,35,"Geffen Dungeon");
+		AddMapDung("gefenia01",60,167,"Gefenia");
+		AddMapDung("gl_sew03",171,281,"Glast Heim Sewer");
+		AddMapDung("glast_01",368,303,"Glast Heim");
+		AddMapDung("gonryun",160,195,"Gonryun Dungeon");
+		AddMapDung("hu_fild05",168,300,"Abyss Lake");
+		AddMapDung("izlu2dun",106,88,"Bibilan Dungeon");
+		AddMapDung("kh_dun01",17,222,"Doll Factory");
+		AddMapDung("lhz_dun01",150,284,"Somotology Lab");
+		AddMapDung("lou_dun01",217,195,"Louyang Dungeon");
+		AddMapDung("mjolnir_02",81,359,"Coal Mine");
+		AddMapDung("mjolnir_12",44,26,"Hidden Temple (Alde.)");
+		AddMapDung("moc_fild19",107,100,"Sphinx");
+		AddMapDung("moc_fild20",163,145,"Ant Hell");
+		AddMapDung("moc_ruins",62,162,"Pyramid");
+		AddMapDung("monk_test",303,143,"Sealed Shrine");
+		AddMapDung("mosk_fild02",203,62,"Moscovia Forest");
+		AddMapDung("nameless_n",78,94,"Nameless Island");
+		AddMapDung("nyd_dun01",64,124,"Nydhogg Dungeon");
+		AddMapDung("odin_tem01",98,144,"Odin's Temple");
+		AddMapDung("pay_arche",43,132,"Payon Dungeon");
+		AddMapDung("prt_fild01",136,368,"Hidden Temple (Pront.)");
+		AddMapDung("prt_sewb1",126,248,"Culvert");
+		AddMapDung("ra_fild01",232,326,"Ice Dungeon");
+		AddMapDung("ra_san01",139,134,"Rachel Sanctuary");
+		AddMapDung("ra_temsky",100,86,"Sky Garden");
+		AddMapDung("tha_scene01",131,223,"Thanatos' Tower");
+		AddMapDung("tur_dun01",149,238,"Turtle Dungeon");
+		AddMapDung("umbala",110,283,"Umbala Dungeon");
+		AddMapDung("ve_fild03",168,235,"Thor's Volcano");
+		AddMapDung("xmas",143,306,"Toy Factory");
+		AddMapDung("yggdrasil01",234,255,"Yggdrasil Tree");
+		AddMapDung("yuno_fild03",39,140,"Magma Dungeon");
+		AddMapDung("yuno_fild07",218,176,"Juperos");
+		end;			
+}
+
+// Account Options NPC
+-	script	accountoptions	-1,{
+	OnPCLoginEvent:
+	getmapxy (.@mapname$, .@x, .@y, 0);
+	if (#set_main == 1) { atcommand "@main on"; }
+	if (#set_ks == 1) { atcommand "@noks"; }
+	if (#set_uptime == 1) { atcommand "@uptime"; }
+	if (#set_showdelay == 1) { atcommand "@showdelay"; }
+	if (#set_showexp == 1) { atcommand "@showexp"; }
+	if (#set_showzeny == 1) { atcommand "@showzeny"; }
+	if (#set_autoloot > 0) { atcommand "@autoloot "+#set_autoloot; }
+	if (#set_mail == 1 && .@mapname$ == "prontera") { openmail; }
+	end;
+}
+
+// Town Locations
+alberta,31,240,4	duplicate(allinone)	Player Services#alb	864
+aldebaran,145,118,4	duplicate(allinone)	Player Services#alde	864
+amatsu,192,81,1	duplicate(allinone)	Player Services#ama1	864
+amatsu,102,153,5	duplicate(allinone)	Player Services#ama2	864
+ayothaya,144,117,6	duplicate(allinone)	Player Services#aya	864
+comodo,194,158,4	duplicate(allinone)	Player Services#com	864
+einbroch,59,205,4	duplicate(allinone)	Player Services#ein1	864
+einbroch,243,189,2	duplicate(allinone)	Player Services#ein2	864
+einbech,135,249,4	duplicate(allinone)	Player Services#eib	864
+geffen,115,66,4	duplicate(allinone)	Player Services#gef1	864
+gonryun,151,130,4	duplicate(allinone)	Player Services#gon	864
+izlude,133,117,4	duplicate(allinone)	Player Services#iz	864
+hugel,88,151,5	duplicate(allinone)	Player Services#hug	864
+lighthalzen,155,79,6	duplicate(allinone)	Player Services#lhz	864
+louyang,210,106,4	duplicate(allinone)	Player Services#lou	864
+morocc,163,96,4	duplicate(allinone)	Player Services#mor1	864
+prontera,163,195,4	duplicate(allinone)	Player Services#prt	864
+payon,182,110,4	duplicate(allinone)	Player Services#pay	864
+rachel,123,118,5	duplicate(allinone)	Player Services#rac	864
+moscovia,231,196,4	duplicate(allinone)	Player Services#mos	864
+umbala,132,130,4	duplicate(allinone)	Player Services#umb	864
+xmas,150,136,4	duplicate(allinone)	Player Services#xmas1	864
+yuno,137,162,4	duplicate(allinone)	Player Services#yun	864
+moc_ruins,104,110,4	duplicate(allinone)	Player Services#mru	864
+brasilis,204,147,4	duplicate(allinone)	Player Services#bra	864
+mid_camp,200,283,4	duplicate(allinone)	Player Services#camp	864
+umbala,114,285,5	duplicate(allinone)	Player Services#umdun	864
+dewata,205,123,5	duplicate(allinone)	Player Services#dew1	864
+malangdo,218,97,5	duplicate(allinone)	Player Services#malan	864
+morocc,160,187,4	duplicate(allinone)	Player Services#mor2	864
+veins,212,129,4	duplicate(allinone)	Player Services#vei	864
+jawaii,211,236,4	duplicate(allinone)	Player Services#jaw	864
+splendide,202,179,4	duplicate(allinone)	Player Services#spl	864
+manuk,195,188,5	duplicate(allinone)	Player Services#man	864
+eclage,112,40,5	duplicate(allinone)	Player Services#ecl	864
+malaya,269,59,5	duplicate(allinone)	Player Services#maly	864
+niflheim,205,179,4	duplicate(allinone)	Player Services#nif1	864
+niflheim,38,163,4	duplicate(allinone)	Player Services#nif2	864
+
+
+// Dungeon Locations
+ama_dun01,233,9,1	duplicate(allinone)	Player Services#amad	864
+ayo_fild02,279,154,4	duplicate(allinone)	Player Services#ayod	864
+izlu2dun,104,82,4	duplicate(allinone)	Player Services#izd	864
+prt_sewb1,125,253,4	duplicate(allinone)	Player Services#culv	864
+mjolnir_02,75,358,5	duplicate(allinone)	Player Services#coal	864
+einbech,81,101,1	duplicate(allinone)	Player Services#eid	864
+yuno_fild03,37,135,4	duplicate(allinone)	Player Services#mag	864
+gef_fild10,71,339,4	duplicate(allinone)	Player Services#orcd	864
+pay_arche,39,135,4	duplicate(allinone)	Player Services#payd	864
+moc_ruins,64,166,4	duplicate(allinone)	Player Services#pyr	864
+moc_fild19,106,97,4	duplicate(allinone)	Player Services#sph	864
+alb2trea,73,101,4	duplicate(allinone)	Player Services#trea	864
+tur_dun01,148,239,4	duplicate(allinone)	Player Services#tur	864
+hu_fild05,186,210,4	duplicate(allinone)	Player Services#tha	864
+yuno_fild07,221,179,4	duplicate(allinone)	Player Services#jup	864
+tha_scene01,139,194,1	duplicate(allinone)	Player Services#tha	864
+xmas,138,307,5	duplicate(allinone)	Player Services#xmas2	864
+glast_01,205,291,4	duplicate(allinone)	Player Services#gh1	864
+ra_fild01,228,329,5	duplicate(allinone)	Player Services#ic	864
+mjolnir_12,47,23,4	duplicate(allinone)	Player Services#mjo	864
+moc_fild22b,241,200,5	duplicate(allinone)	Player Services#rift	864
+yggdrasil01,241,261,4	duplicate(allinone)	Player Services#	864
+dicastes01,192,190,5	duplicate(allinone)	Player Services#dic	864
+ve_fild03,174,239,5	duplicate(allinone)	Player Services#thor	864
+prt_fild05,279,225,5	duplicate(allinone)	Player Services#culv	864
+cmd_fild07,124,134,5	duplicate(allinone)	Player Services#paro	864
+moc_fild20,147,144,5	duplicate(allinone)	Player Services#anty	864
+cmd_fild07,200,49,5	duplicate(allinone)	Player Services#paro2	864
+ama_fild01,180,324,5	duplicate(allinone)	Player Services#amadun1	864
+gef_tower,156,34,5	duplicate(allinone)	Player Services#gefdun	864
+prt_fild01,142,365,5	duplicate(allinone)	Player Services#prtma1	864
+cmd_fild08,332,349,5	duplicate(allinone)	Player Services#cmdf8	864
+cmd_fild08,346,75,5	duplicate(allinone)	Player Services#cmd8	864
+gef_fild02,209,210,5	duplicate(allinone)	Player Services#comf	864
+ra_san01,128,131,4	duplicate(allinone)	Player Services#rasa	864
+hu_fild05,162,300,4	duplicate(allinone)	Player Services#aby	864

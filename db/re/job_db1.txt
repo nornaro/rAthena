@@ -1,7 +1,7 @@
 // Job-specific Values Database
 //
 // Structure of Database:
-// JobID,Weight,HPFactor,HPMultiplicator,SPFactor,Unarmed,Dagger,1HSword,2HSword,1HSpear,2HSpear,1HAxe,2HAxe,1HMace,2HMace(unused),Rod,Bow,Knuckle,Instrument,Whip,Book,Katar,Revolver,Rifle,Gatling Gun,Shotgun,Grenade Launcher,Fuuma Shuriken,2HStaff,Shield
+// JobID,Weight,HPFactor,HPMultiplicator,SPFactor,Unarmed,Dagger,1HSword,2HSword,1HSpear,2HSpear,1HAxe,2HAxe,1HMace,Hammer(unused),Rod,Bow,Knuckle,Instrument,Whip,Book,Katar,Revolver,Rifle,Gatling Gun,Shotgun,Grenade Launcher,Fuuma Shuriken,2HStaff,Shield
 //
 // Novice
 0,	20000,0    ,500  ,100  ,40  ,55  ,57  ,200 ,200 ,200 ,50  ,200 ,50  ,55  ,65  ,200 ,200 ,200 ,200 ,200 ,200 ,200 ,200 ,200 ,200 ,200 ,200 ,65  ,10

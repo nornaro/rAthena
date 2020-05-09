@@ -1647,7 +1647,7 @@
 7020  // Mother's_Nightmare
 7021  // Foolishness_Of_Blind
 7022  // Old_Hilt
-7023  // Blade_Lost_In_Darkness
+//7023  // Blade_Lost_In_Darkness
 7024  // Bloody_Edge
 7026  // Key_Of_Clock_Tower
 7027  // Underground_Key
@@ -1679,7 +1679,7 @@
 7069  // Broken_Armor_Piece
 7070  // Broken_Shell
 7071  // Tatters_Clothes
-7072  // Rust_Suriken
+//7072  // Rust_Suriken
 7073  // Jewel_Of_Prayer
 7074  // Iron_Glove
 7075  // Iron_Maiden
@@ -1754,7 +1754,7 @@
 7153  // Old_Japaness_Clothes
 7154  // Poison_Powder
 7155  // Poison_Toad's_Skin
-7156  // Broken_Shuriken
+//7156  // Broken_Shuriken
 7157  // Black_Mask
 7158  // Broken_Wine_Vessel
 7159  // Tengu's_Nose
